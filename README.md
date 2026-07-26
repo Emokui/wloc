@@ -25,18 +25,6 @@
 4. 保存并开始部署。
 5. 部署完成后，使用 Cloudflare 提供的 `https://<项目名称>.pages.dev` 地址访问。
 
-## 通过 Wrangler 部署
-
-```bash
-git clone https://github.com/Emokui/wloc.git
-cd wloc/worker
-npm install
-npx wrangler login
-npm run deploy
-```
-
-Wrangler 会读取 `worker/wrangler.pages.jsonc`，并将 `worker/dist/` 作为 Pages 静态资源目录。
-
 ## 注意事项
 
 ### Surge
