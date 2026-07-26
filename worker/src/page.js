@@ -117,7 +117,7 @@ body { font-family:-apple-system,system-ui,"SF Pro","Helvetica Neue",sans-serif;
   <div class="card">
     <h3>搜索地点</h3>
     <div class="input-row">
-      <textarea id="searchInput" rows="3" placeholder="输入或粘贴地址，例如：&#10;43 Kingswell Street&#10;Northampton&#10;NN1 1PP"></textarea>
+      <textarea id="searchInput" rows="3" placeholder="输入或粘贴地址"></textarea>
       <button class="btn btn-secondary" style="flex:none;min-width:56px" onclick="searchPlace()">搜索</button>
     </div>
     <div style="font-size:11px;color:var(--gray);margin-top:6px">支持地名、街道、邮政编码和多行地址 · Shift + Enter 换行</div>
