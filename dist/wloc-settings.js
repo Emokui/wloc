@@ -78,7 +78,7 @@ try{
         longitude,
         latitude,
         accuracy,
-        updatedAt:new Date(Date.now()+28800000).toISOString().replace("Z","+08:00")
+        updatedAt:new Date().toISOString()
       };
       result=writeSettings(saved)
         ?{success:true,longitude,latitude,accuracy}
