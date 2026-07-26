@@ -475,7 +475,7 @@ button { -webkit-tap-highlight-color:transparent; }
       <textarea id="searchInput" rows="1" placeholder="输入或粘贴地址" aria-label="地点或地址" autocomplete="street-address" enterkeyhint="search"></textarea>
       <button type="button" class="btn search-btn" id="searchBtn" onclick="searchPlace()">搜索</button>
     </div>
-    <div class="helper">支持多行地址 · Shift + Enter 换行 · 搜索数据 © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a></div>
+    <div class="helper">支持多行地址 · Shift + Enter 换行</div>
   </div>
   <div class="card">
     <div class="card-heading">
