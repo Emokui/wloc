@@ -64,10 +64,21 @@ function Pe(){
   if(args.logLevel)settings.logLevel=args.logLevel;
   if(args.LogLevel)settings.logLevel=args.LogLevel;
   if(saved){
-    applyNumber(saved,"longitude",Number.parseFloat);
-    applyNumber(saved,"latitude",Number.parseFloat);
-    applyNumber(saved,"accuracy",value=>Number.parseInt(value,10));
-  }else if(settings.longitude===113.94114&&settings.latitude===22.544577){
+    const savedLongitude=Number.parseFloat(saved.longitude);
+    const savedLatitude=Number.parseFloat(saved.latitude);
+    const savedCoordinatesValid=
+      Number.isFinite(savedLongitude)&&savedLongitude>=-180&&savedLongitude<=180&&
+      Number.isFinite(savedLatitude)&&savedLatitude>=-90&&savedLatitude<=90;
+    if(savedCoordinatesValid){
+      settings.longitude=savedLongitude;
+      settings.latitude=savedLatitude;
+      applyNumber(saved,"accuracy",value=>Number.parseInt(value,10));
+    }
+  }
+  const coordinatesValid=
+    Number.isFinite(settings.longitude)&&settings.longitude>=-180&&settings.longitude<=180&&
+    Number.isFinite(settings.latitude)&&settings.latitude>=-90&&settings.latitude<=90;
+  if(!coordinatesValid){
     settings.longitude=null;
     settings.latitude=null;
   }
