@@ -39,55 +39,6 @@ button,input,textarea { font:inherit; }
 button { -webkit-tap-highlight-color:transparent; }
 .map-shell { position:relative; background:#dce5ef; overflow:hidden; }
 #map { height:clamp(340px,52vh,580px); width:100%; }
-.map-brand {
-  position:absolute;
-  top:max(14px,env(safe-area-inset-top));
-  left:14px;
-  z-index:1000;
-  display:flex;
-  align-items:center;
-  gap:10px;
-  padding:9px 12px 9px 9px;
-  color:var(--ink);
-  border:1px solid rgba(255,255,255,.72);
-  border-radius:16px;
-  background:rgba(255,255,255,.88);
-  box-shadow:0 8px 30px rgba(20,35,55,.16);
-  backdrop-filter:blur(18px) saturate(150%);
-  -webkit-backdrop-filter:blur(18px) saturate(150%);
-}
-.brand-mark {
-  width:30px;
-  height:30px;
-  display:grid;
-  place-items:center;
-  color:#fff;
-  border-radius:10px;
-  background:linear-gradient(145deg,#3b82f6,#1d4ed8);
-  box-shadow:0 5px 12px rgba(37,99,235,.3);
-  font-size:12px;
-  font-weight:800;
-  letter-spacing:-.02em;
-}
-.brand-copy { display:flex; flex-direction:column; line-height:1.1; }
-.brand-copy strong { font-size:14px; letter-spacing:.01em; }
-.brand-copy span { margin-top:3px; color:var(--muted); font-size:10px; }
-.map-hint {
-  position:absolute;
-  left:14px;
-  bottom:48px;
-  z-index:1000;
-  padding:8px 11px;
-  color:#fff;
-  border-radius:12px;
-  background:rgba(19,29,44,.7);
-  box-shadow:0 6px 20px rgba(0,0,0,.15);
-  backdrop-filter:blur(12px);
-  -webkit-backdrop-filter:blur(12px);
-  font-size:11px;
-  font-weight:600;
-  pointer-events:none;
-}
 .layer-switch {
   position:absolute;
   right:14px;
@@ -123,20 +74,20 @@ button { -webkit-tap-highlight-color:transparent; }
 .layer-btn:active { transform:scale(.95); }
 .leaflet-control-zoom { border:0!important; border-radius:13px!important; overflow:hidden; box-shadow:0 8px 24px rgba(20,35,55,.15)!important; }
 .leaflet-control-zoom a { color:var(--ink)!important; border-color:var(--line)!important; background:rgba(255,255,255,.92)!important; }
+.leaflet-control-attribution {
+  padding:2px 5px!important;
+  color:#667085!important;
+  background:rgba(255,255,255,.78)!important;
+  font-size:9px!important;
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+}
 .panel {
   position:relative;
   z-index:1100;
   max-width:700px;
-  margin:-30px auto 0;
-  padding:0 16px calc(34px + env(safe-area-inset-bottom));
-}
-.sheet-handle {
-  width:42px;
-  height:5px;
-  margin:0 auto 14px;
-  border-radius:99px;
-  background:rgba(255,255,255,.9);
-  box-shadow:0 2px 8px rgba(20,35,55,.12);
+  margin:0 auto;
+  padding:22px 16px calc(34px + env(safe-area-inset-bottom));
 }
 .card {
   margin-bottom:14px;
@@ -212,19 +163,6 @@ button { -webkit-tap-highlight-color:transparent; }
 .search-btn { min-width:74px; color:#fff; background:var(--ink); box-shadow:none; }
 .search-btn:active { background:#253147; transform:scale(.98); }
 .helper { margin-top:8px; color:var(--muted); font-size:11px; line-height:1.45; }
-.status {
-  width:max-content;
-  max-width:100%;
-  margin:18px auto 0;
-  padding:9px 13px;
-  color:var(--muted);
-  border:1px solid rgba(255,255,255,.8);
-  border-radius:99px;
-  background:rgba(255,255,255,.7);
-  box-shadow:0 6px 20px rgba(35,55,80,.08);
-  font-size:11px;
-  text-align:center;
-}
 .error-banner {
   display:none;
   margin-bottom:14px;
@@ -352,9 +290,8 @@ button { -webkit-tap-highlight-color:transparent; }
 }
 @media(max-width:540px) {
   #map { height:46vh; min-height:330px; }
-  .panel { margin-top:-26px; padding-inline:12px; }
+  .panel { padding:18px 12px calc(30px + env(safe-area-inset-bottom)); }
   .card { padding:17px; border-radius:19px; }
-  .map-hint { display:none; }
   .layer-switch { right:12px; bottom:42px; }
   .layer-btn { padding:7px 9px; font-size:11px; }
   .input-row { grid-template-columns:1fr; }
@@ -366,14 +303,6 @@ button { -webkit-tap-highlight-color:transparent; }
 <body>
 <div class="map-shell">
 <div id="map"></div>
-<div class="map-brand">
-  <div class="brand-mark">W</div>
-  <div class="brand-copy">
-    <strong>WLOC</strong>
-    <span>位置选择器</span>
-  </div>
-</div>
-<div class="map-hint">轻触地图选择位置</div>
 <div class="layer-switch">
   <button type="button" class="layer-btn active" data-layer="satellite" onclick="switchLayer('satellite')">卫星</button>
   <button type="button" class="layer-btn" data-layer="wgs84" onclick="switchLayer('wgs84')">WGS84</button>
@@ -381,7 +310,6 @@ button { -webkit-tap-highlight-color:transparent; }
 </div>
 </div>
 <div class="panel">
-  <div class="sheet-handle" aria-hidden="true"></div>
   <div class="error-banner" id="errorBanner">
     <b>模块未生效</b>
     请检查以下配置：<br>
@@ -440,7 +368,6 @@ button { -webkit-tap-highlight-color:transparent; }
     </div>
     <div id="favList" class="fav-list"></div>
   </div>
-  <div class="status" id="status">选好位置后点击「储存到设备」写入代理工具</div>
 </div>
 <div class="toast" id="toast"></div>
 <div class="modal-overlay" id="favModal" role="dialog" aria-modal="true" aria-labelledby="favModalTitle">
@@ -462,6 +389,7 @@ let selected = false;
 let activeLon = null, activeLat = null;
 
 const map = L.map('map').setView([lat, lon], 13);
+map.attributionControl.setPrefix(false);
 const tiles = {
   satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom:19, attribution:'ArcGIS'}),
   wgs84: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {maxZoom:19, attribution:'ArcGIS WGS84'}),
@@ -634,7 +562,6 @@ async function save() {
     if (d.success) {
       activeLon = lon; activeLat = lat;
       btn.textContent = '\\u2713 已储存'; btn.className = 'btn btn-primary success';
-      document.getElementById('status').textContent = '\\u2713 已写入: ' + lon.toFixed(6) + ', ' + lat.toFixed(6) + ' \\u00b7 ' + new Date().toLocaleTimeString('zh-CN');
       document.getElementById('activeValue').textContent = '经度 ' + lon.toFixed(6) + '  纬度 ' + lat.toFixed(6) + '  精度 25m';
       renderFavs();
       toast('\\u2713 坐标已写入设备，下次定位生效');
