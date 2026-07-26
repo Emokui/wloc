@@ -48,7 +48,7 @@ function Pe(){
   const args=globalThis.$argument||{};
   let saved=null;
   try{
-    const value=o.getItem("wloc_settings");
+    const value=o.getItem("emokui_wloc_settings_v1");
     if(value&&typeof value==="object")saved=value;
   }catch{}
   const settings={...Ze};
