@@ -20,6 +20,12 @@ function parseQuery(url){
   return params;
 }
 
+function parseArguments(value){
+  if(value&&typeof value==="object")return value;
+  const params=parseQuery("?"+String(value||"").replace(/^\?/,""));
+  return Object.fromEntries(params);
+}
+
 function readSettings(){
   const raw=$persistentStore.read(STORE_KEY);
   if(!raw)return null;
@@ -44,22 +50,37 @@ function isValidCoordinate(longitude,latitude){
 }
 
 const params=parseQuery($request.url);
+const moduleArgs=parseArguments(globalThis.$argument);
 const action=params.get("action")||"save";
 let result;
 
 try{
   if(action==="query"){
     const saved=readSettings();
-    if(saved&&isValidCoordinate(Number(saved.longitude),Number(saved.latitude))){
+    const savedLongitude=Number(saved?.longitude);
+    const savedLatitude=Number(saved?.latitude);
+    const moduleLongitude=Number(moduleArgs.longitude);
+    const moduleLatitude=Number(moduleArgs.latitude);
+    const hasSaved=isValidCoordinate(savedLongitude,savedLatitude);
+    const hasModuleDefault=isValidCoordinate(moduleLongitude,moduleLatitude);
+
+    if(hasSaved||hasModuleDefault){
+      const longitude=hasSaved?savedLongitude:moduleLongitude;
+      const latitude=hasSaved?savedLatitude:moduleLatitude;
+      const requestedAccuracy=Number.parseInt(
+        hasSaved?saved.accuracy:moduleArgs.accuracy,
+        10
+      );
       result={
         success:true,
-        longitude:Number(saved.longitude),
-        latitude:Number(saved.latitude),
-        accuracy:Number(saved.accuracy)||25,
-        updatedAt:saved.updatedAt||null
+        longitude,
+        latitude,
+        accuracy:Number.isFinite(requestedAccuracy)&&requestedAccuracy>0?requestedAccuracy:25,
+        updatedAt:hasSaved?(saved.updatedAt||null):null,
+        source:hasSaved?"saved":"module"
       };
     }else{
-      result={success:false,error:"无已保存的坐标"};
+      result={success:false,error:"模块未设置有效坐标"};
     }
   }else if(action==="clear"){
     result=writeSettings(null)
