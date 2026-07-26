@@ -184,13 +184,10 @@ button { -webkit-tap-highlight-color:transparent; }
 .leaflet-control-zoom a { color:var(--ink)!important; border-color:var(--line)!important; background:var(--zoom-bg)!important; }
 .leaflet-control-zoom a:hover { background:var(--zoom-hover)!important; }
 .leaflet-control-attribution {
-  max-width:min(82vw,760px);
   padding:3px 6px!important;
   color:var(--attribution-text)!important;
   background:var(--attribution-bg)!important;
   font-size:10px!important;
-  line-height:1.25!important;
-  white-space:normal;
   backdrop-filter:blur(8px);
   -webkit-backdrop-filter:blur(8px);
 }
@@ -327,7 +324,6 @@ button { -webkit-tap-highlight-color:transparent; }
   background:var(--soft);
   font-size:13px;
 }
-.active-loc .label { margin-bottom:6px; color:var(--muted); font-size:10px; font-weight:650; letter-spacing:.04em; text-transform:uppercase; }
 .active-loc .value { font-family:"SF Mono",ui-monospace,Menlo,monospace; font-size:12px; line-height:1.5; }
 .fav-list { max-height:260px; overflow-y:auto; }
 .fav-item {
@@ -402,6 +398,7 @@ button { -webkit-tap-highlight-color:transparent; }
 }
 .modal input::placeholder { color:var(--placeholder); }
 .modal input:focus { border-color:rgba(37,99,235,.5); background:var(--field-focus); box-shadow:0 0 0 4px rgba(37,99,235,.1); }
+.fav-modal-coords { margin-bottom:12px; color:var(--muted); font-size:12px; text-align:center; }
 .modal .modal-btns { display:flex; gap:9px; }
 .modal .modal-btns .btn { padding:11px; }
 .theme-toggle {
@@ -440,7 +437,7 @@ button { -webkit-tap-highlight-color:transparent; }
   #map { height:46vh; min-height:330px; }
   .panel { padding:18px 12px calc(72px + env(safe-area-inset-bottom)); }
   .card { padding:17px; border-radius:19px; }
-  .layer-switch { right:12px; bottom:68px; }
+  .layer-switch { right:12px; bottom:42px; }
   .layer-btn { padding:7px 9px; font-size:11px; }
   .input-row { grid-template-columns:1fr; }
   .input-row textarea { min-height:48px; height:48px; }
@@ -500,7 +497,7 @@ button { -webkit-tap-highlight-color:transparent; }
         <h3>当前生效坐标</h3>
       </div>
     </div>
-    <div class="active-loc" id="activeLoc">
+    <div class="active-loc">
       <div class="value" id="activeValue">查询中...</div>
     </div>
     <div class="row">
@@ -521,7 +518,7 @@ button { -webkit-tap-highlight-color:transparent; }
   <div class="modal">
     <h3 id="favModalTitle">收藏此位置</h3>
     <input id="favNameInput" placeholder="输入备注名称（如: 公司、家）" maxlength="30" />
-    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;text-align:center" id="favModalCoords"></div>
+    <div class="fav-modal-coords" id="favModalCoords"></div>
     <div class="modal-btns">
       <button type="button" class="btn btn-secondary" onclick="closeFavModal()">取消</button>
       <button type="button" class="btn btn-primary" onclick="confirmFav()">保存</button>
@@ -537,7 +534,6 @@ const SAVE_API = 'https://gs-loc.apple.com/wloc-settings/save';
 const FAV_KEY = 'wloc_favorites';
 const THEME_KEY = 'wloc_theme';
 let lat = null, lon = null;
-let selected = false;
 let activeLon = null, activeLat = null;
 
 const themeMedia = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : {matches:false};
@@ -611,8 +607,19 @@ function switchLayer(name) {
 let marker = null;
 map.on('click', e => { setPos(e.latlng.lat, e.latlng.lng); });
 
+function isValidPosition(newLat, newLon) {
+  return Number.isFinite(newLat) && newLat >= -90 && newLat <= 90 &&
+    Number.isFinite(newLon) && newLon >= -180 && newLon <= 180;
+}
+
+function parsePositionNumber(value) {
+  if (value === null || typeof value === 'undefined' || String(value).trim() === '') return NaN;
+  return Number(value);
+}
+
 function setPos(newLat, newLon) {
-  lat = newLat; lon = newLon; selected = true;
+  if (!isValidPosition(newLat, newLon)) return false;
+  lat = newLat; lon = newLon;
   if (marker) {
     marker.setLatLng([lat, lon]);
   } else {
@@ -623,17 +630,21 @@ function setPos(newLat, newLon) {
     });
   }
   document.getElementById('coords').textContent = '经度 ' + lon.toFixed(6) + '  纬度 ' + lat.toFixed(6);
+  return true;
 }
 
 function moveTo(newLat, newLon, zoom) {
-  setPos(newLat, newLon);
+  if (!setPos(newLat, newLon)) return false;
   map.setView([lat, lon], zoom || 15);
+  return true;
 }
 
+let toastTimer = null;
 function toast(msg, ms) {
   const t = document.getElementById('toast');
+  if (toastTimer) clearTimeout(toastTimer);
   t.textContent = msg; t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), ms || 2500);
+  toastTimer = setTimeout(() => t.classList.remove('show'), ms || 2500);
 }
 
 function showError(show) {
@@ -642,7 +653,22 @@ function showError(show) {
 
 /* ---- Favorites (localStorage) ---- */
 function getFavs() {
-  try { return JSON.parse(localStorage.getItem(FAV_KEY)) || []; } catch(e) { return []; }
+  try {
+    const value = JSON.parse(localStorage.getItem(FAV_KEY));
+    if (!Array.isArray(value)) return [];
+    const favorites = [];
+    for (const item of value) {
+      if (!item || typeof item.name !== 'string' || !item.name.trim()) continue;
+      const itemLat = parsePositionNumber(item.lat);
+      const itemLon = parsePositionNumber(item.lon);
+      if (isValidPosition(itemLat, itemLon)) {
+        favorites.push({name:item.name, lat:itemLat, lon:itemLon});
+      }
+    }
+    return favorites;
+  } catch(e) {
+    return [];
+  }
 }
 function saveFavs(favs) {
   localStorage.setItem(FAV_KEY, JSON.stringify(favs));
@@ -675,7 +701,7 @@ function escHtml(s) {
 }
 
 function addFav() {
-  if (!selected) { toast('请先在地图上选择一个位置'); return; }
+  if (!isValidPosition(lat, lon)) { toast('请先在地图上选择一个位置'); return; }
   document.getElementById('favModalCoords').textContent = lon.toFixed(6) + ', ' + lat.toFixed(6);
   document.getElementById('favNameInput').value = '';
   document.getElementById('favModal').classList.add('show');
@@ -690,7 +716,7 @@ function confirmFav() {
   const name = document.getElementById('favNameInput').value.trim();
   if (!name) { toast('请输入备注名称'); return; }
   const favs = getFavs();
-  favs.push({ name, lon, lat, time: new Date().toISOString() });
+  favs.push({ name, lon, lat });
   saveFavs(favs);
   closeFavModal();
   renderFavs();
@@ -728,9 +754,9 @@ function queryActive() {
   fetch(SAVE_API + '?action=query', { method:'GET', mode:'cors', cache:'no-store' })
     .then(r => r.json())
     .then(d => {
-      const queriedLon = Number(d.longitude);
-      const queriedLat = Number(d.latitude);
-      if (d.success && Number.isFinite(queriedLon) && Number.isFinite(queriedLat)) {
+      const queriedLon = parsePositionNumber(d.longitude);
+      const queriedLat = parsePositionNumber(d.latitude);
+      if (d.success && isValidPosition(queriedLat, queriedLon)) {
         activeLon = queriedLon;
         activeLat = queriedLat;
         el.textContent = '经度 ' + activeLon.toFixed(6) + '  纬度 ' + activeLat.toFixed(6) + (d.accuracy ? '  精度 ' + d.accuracy + 'm' : '');
@@ -743,7 +769,9 @@ function queryActive() {
       }
     })
     .catch(() => {
+      activeLon = null; activeLat = null;
       el.textContent = '查询失败 (需要代理模块支持)';
+      renderFavs();
     });
 }
 
@@ -762,7 +790,7 @@ function clearActive() {
 
 /* ---- Save to device ---- */
 async function save() {
-  if (!selected) { toast('请先在地图上选择一个位置'); return; }
+  if (!isValidPosition(lat, lon)) { toast('请先在地图上选择一个位置'); return; }
   const btn = document.getElementById('saveBtn');
   btn.textContent = '储存中...'; btn.disabled = true;
   showError(false);
@@ -839,14 +867,15 @@ function showSearchResult(results, query) {
     return;
   }
   const result = results[0];
-  const resultLat = Number.parseFloat(result.lat);
-  const resultLon = Number.parseFloat(result.lon);
-  if (!Number.isFinite(resultLat) || resultLat < -90 || resultLat > 90 ||
-      !Number.isFinite(resultLon) || resultLon < -180 || resultLon > 180) {
-    throw new Error('搜索结果坐标无效');
+  const resultLat = parsePositionNumber(result.lat);
+  const resultLon = parsePositionNumber(result.lon);
+  if (!isValidPosition(resultLat, resultLon)) {
+    toast('搜索结果坐标无效', 3000);
+    return false;
   }
   moveTo(resultLat, resultLon, 15);
   toast(String(result.display_name || query).slice(0, 40));
+  return true;
 }
 
 async function searchPlace() {
