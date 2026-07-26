@@ -28,9 +28,9 @@ body { font-family:-apple-system,system-ui,"SF Pro","Helvetica Neue",sans-serif;
 .btn-danger:active { background:#d63027; transform:scale(.97); }
 .btn.success { background:var(--green); color:#fff; }
 .btn-sm { flex:none; min-width:auto; padding:6px 12px; font-size:12px; border-radius:8px; }
-.input-row { display:flex; gap:8px; margin-top:10px; }
-.input-row input { flex:1; padding:10px 12px; border:1px solid #d1d1d6; border-radius:8px; font-size:14px; outline:none; min-width:0; }
-.input-row input:focus { border-color:var(--blue); }
+.input-row { display:flex; gap:8px; margin-top:10px; align-items:flex-start; }
+.input-row textarea { flex:1; min-height:76px; padding:10px 12px; border:1px solid #d1d1d6; border-radius:8px; font:inherit; font-size:14px; line-height:1.4; outline:none; min-width:0; resize:vertical; }
+.input-row textarea:focus { border-color:var(--blue); }
 .status { font-size:12px; color:var(--gray); margin-top:8px; text-align:center; }
 .error-banner { background:var(--red); color:#fff; padding:14px 16px; border-radius:12px; margin-bottom:12px; font-size:14px; line-height:1.5; display:none; }
 .error-banner b { display:block; margin-bottom:4px; }
@@ -115,19 +115,12 @@ body { font-family:-apple-system,system-ui,"SF Pro","Helvetica Neue",sans-serif;
     </div>
   </div>
   <div class="card">
-    <h3>粘贴地图链接</h3>
-    <div class="input-row">
-      <input id="urlInput" placeholder="Apple/Google/高德地图链接 或 经纬度" />
-      <button class="btn btn-secondary" style="flex:none;min-width:56px" onclick="parseUrl()">解析</button>
-    </div>
-    <div style="font-size:11px;color:var(--gray);margin-top:6px">支持 Apple Maps · Google Maps · 高德 · 百度 · 坐标文本</div>
-  </div>
-  <div class="card">
     <h3>搜索地点</h3>
     <div class="input-row">
-      <input id="searchInput" placeholder="输入地名（如: 上海外滩）" />
+      <textarea id="searchInput" rows="3" placeholder="输入或粘贴地址，例如：&#10;43 Kingswell Street&#10;Northampton&#10;NN1 1PP"></textarea>
       <button class="btn btn-secondary" style="flex:none;min-width:56px" onclick="searchPlace()">搜索</button>
     </div>
+    <div style="font-size:11px;color:var(--gray);margin-top:6px">支持地名、街道、邮政编码和多行地址 · Shift + Enter 换行</div>
   </div>
   <div class="status" id="status">选好位置后点击「储存到设备」写入代理工具</div>
 </div>
@@ -351,38 +344,10 @@ function locateMe() {
   );
 }
 
-function parseMapUrl(text) {
-  let m;
-  m = text.match(/ll=([0-9.-]+),([0-9.-]+)/);
-  if (m) return { lat: parseFloat(m[1]), lon: parseFloat(m[2]) };
-  m = text.match(/@([0-9.-]+),([0-9.-]+)/);
-  if (m) return { lat: parseFloat(m[1]), lon: parseFloat(m[2]) };
-  m = text.match(/lnglat=([0-9.-]+),([0-9.-]+)/);
-  if (m) return { lat: parseFloat(m[2]), lon: parseFloat(m[1]) };
-  m = text.match(/(?:location|center)=([0-9.-]+),([0-9.-]+)/);
-  if (m) return { lat: parseFloat(m[2]), lon: parseFloat(m[1]) };
-  m = text.match(/([0-9]+\\.[0-9]+)[,\\s]+([0-9]+\\.[0-9]+)/);
-  if (m) {
-    const a = parseFloat(m[1]), b = parseFloat(m[2]);
-    if (a < 90 && b > 90) return { lat: a, lon: b };
-    if (b < 90 && a > 90) return { lat: b, lon: a };
-    return { lat: a, lon: b };
-  }
-  return null;
-}
-
-function parseUrl() {
-  const input = document.getElementById('urlInput').value.trim();
-  if (!input) return toast('请粘贴地图链接或坐标');
-  const result = parseMapUrl(input);
-  if (!result) { toast('无法解析坐标，请检查链接格式', 3000); return; }
-  moveTo(result.lat, result.lon, 15);
-  toast('已解析: ' + result.lon.toFixed(4) + ', ' + result.lat.toFixed(4));
-}
-
 async function searchPlace() {
-  const q = document.getElementById('searchInput').value.trim();
-  if (!q) return toast('请输入地名');
+  const raw = document.getElementById('searchInput').value.trim();
+  if (!raw) return toast('请输入地点或地址');
+  const q = raw.split(/\\r?\\n/).map(part => part.trim()).filter(Boolean).join(', ');
   toast('搜索中...');
   try {
     const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(q));
@@ -394,15 +359,12 @@ async function searchPlace() {
   } catch(e) { toast('搜索失败', 3000); }
 }
 
-document.addEventListener('paste', e => {
-  const text = (e.clipboardData||window.clipboardData).getData('text');
-  if (text && (text.includes('map') || text.includes('loc') || text.includes('lnglat') || /[0-9]+\\.[0-9]+/.test(text))) {
-    document.getElementById('urlInput').value = text;
-    setTimeout(parseUrl, 200);
+document.getElementById('searchInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    searchPlace();
   }
 });
-document.getElementById('searchInput').addEventListener('keydown', e => { if(e.key==='Enter') searchPlace(); });
-document.getElementById('urlInput').addEventListener('keydown', e => { if(e.key==='Enter') parseUrl(); });
 document.getElementById('favNameInput').addEventListener('keydown', e => { if(e.key==='Enter') confirmFav(); });
 
 renderFavs();
