@@ -155,7 +155,7 @@ button { -webkit-tap-highlight-color:transparent; }
   width:100%;
   grid-template-columns:minmax(0,1fr) auto;
   gap:10px;
-  align-items:stretch;
+  align-items:start;
 }
 .input-row textarea {
   width:100%;
@@ -167,14 +167,15 @@ button { -webkit-tap-highlight-color:transparent; }
   border-radius:14px;
   background:var(--soft);
   outline:none;
-  resize:vertical;
+  resize:none;
+  overflow-y:hidden;
   font-size:14px;
   line-height:1.5;
   transition:border-color .2s,box-shadow .2s,background .2s;
 }
 .input-row textarea::placeholder { color:#98a2b3; }
 .input-row textarea:focus { border-color:rgba(37,99,235,.5); background:#fff; box-shadow:0 0 0 4px rgba(37,99,235,.1); }
-.search-btn { min-width:74px; color:#fff; background:var(--ink); box-shadow:none; }
+.search-btn { min-width:74px; min-height:48px; color:#fff; background:var(--ink); box-shadow:none; }
 .search-btn:active { background:#253147; transform:scale(.98); }
 .helper { margin-top:8px; color:var(--muted); font-size:11px; line-height:1.45; }
 .error-banner {
@@ -363,11 +364,9 @@ button { -webkit-tap-highlight-color:transparent; }
     <div class="card-heading">
       <div>
         <h3>当前生效坐标</h3>
-        <p>读取 Surge 中保存的设备端坐标</p>
       </div>
     </div>
     <div class="active-loc" id="activeLoc">
-      <div class="label">设备持久化数据 (wloc_settings)</div>
       <div class="value" id="activeValue">查询中...</div>
     </div>
     <div class="row">
@@ -615,7 +614,15 @@ async function searchPlace() {
   } catch(e) { toast('搜索失败', 3000); }
 }
 
-document.getElementById('searchInput').addEventListener('keydown', e => {
+const searchInput = document.getElementById('searchInput');
+function resizeSearchInput() {
+  searchInput.style.height = '48px';
+  const nextHeight = Math.min(Math.max(searchInput.scrollHeight, 48), 132);
+  searchInput.style.height = nextHeight + 'px';
+  searchInput.style.overflowY = searchInput.scrollHeight > 132 ? 'auto' : 'hidden';
+}
+searchInput.addEventListener('input', resizeSearchInput);
+searchInput.addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
     searchPlace();
