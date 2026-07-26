@@ -3,12 +3,12 @@ export function getPageHtml() {
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>WLOC</title>
 <meta name="theme-color" content="#2563eb">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="WLOC">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
@@ -45,6 +45,7 @@ button,input,textarea { font:inherit; }
 button { -webkit-tap-highlight-color:transparent; }
 .map-shell { position:relative; background:#dce5ef; overflow:hidden; }
 #map { height:clamp(340px,52vh,580px); width:100%; }
+.leaflet-top { padding-top:env(safe-area-inset-top); }
 .layer-switch {
   position:absolute;
   right:14px;
@@ -149,7 +150,14 @@ button { -webkit-tap-highlight-color:transparent; }
 .btn-danger:active { background:rgba(229,72,77,.14); transform:scale(.98); }
 .btn.success { color:#fff; border-color:transparent; background:linear-gradient(145deg,#27b773,#128954); box-shadow:0 8px 18px rgba(22,163,100,.22); }
 .btn-sm { flex:none; min-width:auto; min-height:36px; padding:8px 12px; border-radius:11px; font-size:12px; }
-.input-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; align-items:stretch; }
+.input-row {
+  display:grid;
+  width:100%;
+  max-width:560px;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:10px;
+  align-items:stretch;
+}
 .input-row textarea {
   width:100%;
   min-height:88px;
@@ -300,7 +308,7 @@ button { -webkit-tap-highlight-color:transparent; }
   .card { padding:17px; border-radius:19px; }
   .layer-switch { right:12px; bottom:42px; }
   .layer-btn { padding:7px 9px; font-size:11px; }
-  .input-row { grid-template-columns:1fr; }
+  .input-row { max-width:none; grid-template-columns:1fr; }
   .input-row textarea { min-height:82px; }
   .search-btn { width:100%; }
 }
