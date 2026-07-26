@@ -1,8 +1,8 @@
 {
   "type": "module",
   "scripts": {
-    "dev": "npx wrangler dev",
-    "deploy": "npx wrangler deploy --minify",
+    "dev": "npm run pages:dev",
+    "deploy": "npm run pages:deploy",
     "pages:dev": "npx wrangler pages dev --port 8787 -c wrangler.pages.jsonc",
     "pages:deploy": "npx wrangler pages deploy -c wrangler.pages.jsonc"
   },
