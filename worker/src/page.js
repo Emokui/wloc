@@ -159,7 +159,8 @@ button { -webkit-tap-highlight-color:transparent; }
 }
 .input-row textarea {
   width:100%;
-  min-height:64px;
+  min-height:48px;
+  height:48px;
   padding:13px 14px;
   color:var(--ink);
   border:1px solid var(--line);
@@ -308,7 +309,7 @@ button { -webkit-tap-highlight-color:transparent; }
   .layer-switch { right:12px; bottom:42px; }
   .layer-btn { padding:7px 9px; font-size:11px; }
   .input-row { grid-template-columns:1fr; }
-  .input-row textarea { min-height:64px; }
+  .input-row textarea { min-height:48px; height:48px; }
   .search-btn { width:100%; }
 }
 </style>
@@ -339,7 +340,7 @@ button { -webkit-tap-highlight-color:transparent; }
       </div>
     </div>
     <div class="input-row">
-      <textarea id="searchInput" rows="2" placeholder="输入或粘贴地址" aria-label="地点或地址" autocomplete="street-address" enterkeyhint="search"></textarea>
+      <textarea id="searchInput" rows="1" placeholder="输入或粘贴地址" aria-label="地点或地址" autocomplete="street-address" enterkeyhint="search"></textarea>
       <button type="button" class="btn search-btn" onclick="searchPlace()">搜索</button>
     </div>
     <div class="helper">支持多行地址 · Shift + Enter 换行</div>
