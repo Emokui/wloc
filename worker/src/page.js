@@ -318,7 +318,7 @@ button { -webkit-tap-highlight-color:transparent; }
 <div id="map"></div>
 <div class="layer-switch">
   <button type="button" class="layer-btn active" data-layer="satellite" onclick="switchLayer('satellite')">卫星</button>
-  <button type="button" class="layer-btn" data-layer="wgs84" onclick="switchLayer('wgs84')">WGS84</button>
+  <button type="button" class="layer-btn" data-layer="street" onclick="switchLayer('street')">街道</button>
   <button type="button" class="layer-btn" data-layer="standard" onclick="switchLayer('standard')">标准</button>
 </div>
 </div>
@@ -405,7 +405,7 @@ const map = L.map('map').setView([lat, lon], 13);
 map.attributionControl.setPrefix(false);
 const tiles = {
   satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom:19, attribution:'ArcGIS'}),
-  wgs84: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {maxZoom:19, attribution:'ArcGIS WGS84'}),
+  street: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {maxZoom:19, attribution:'ArcGIS'}),
   standard: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19, attribution:'\\u00a9 OSM'})
 };
 let currentLayer = tiles.satellite;
