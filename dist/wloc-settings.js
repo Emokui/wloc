@@ -38,8 +38,13 @@ function readSettings(){
 }
 
 function writeSettings(value){
-  const serialized=value===null?null:JSON.stringify(value);
+  const serialized=value===null?"":JSON.stringify(value);
   return $persistentStore.write(serialized,STORE_KEY);
+}
+
+function parseCoordinate(value){
+  if(value===null||typeof value==="undefined"||String(value).trim()==="")return NaN;
+  return Number(value);
 }
 
 function isValidCoordinate(longitude,latitude){
@@ -57,10 +62,10 @@ let result;
 try{
   if(action==="query"){
     const saved=readSettings();
-    const savedLongitude=Number(saved?.longitude);
-    const savedLatitude=Number(saved?.latitude);
-    const moduleLongitude=Number(moduleArgs.longitude);
-    const moduleLatitude=Number(moduleArgs.latitude);
+    const savedLongitude=parseCoordinate(saved?.longitude);
+    const savedLatitude=parseCoordinate(saved?.latitude);
+    const moduleLongitude=parseCoordinate(moduleArgs.longitude);
+    const moduleLatitude=parseCoordinate(moduleArgs.latitude);
     const hasSaved=isValidCoordinate(savedLongitude,savedLatitude);
     const hasModuleDefault=isValidCoordinate(moduleLongitude,moduleLatitude);
 
@@ -75,9 +80,7 @@ try{
         success:true,
         longitude,
         latitude,
-        accuracy:Number.isFinite(requestedAccuracy)&&requestedAccuracy>0?requestedAccuracy:25,
-        updatedAt:hasSaved?(saved.updatedAt||null):null,
-        source:hasSaved?"saved":"module"
+        accuracy:Number.isFinite(requestedAccuracy)&&requestedAccuracy>0?requestedAccuracy:25
       };
     }else{
       result={success:false,error:"模块未设置有效坐标"};
@@ -86,9 +89,9 @@ try{
     result=writeSettings(null)
       ?{success:true}
       :{success:false,error:"清除失败"};
-  }else{
-    const longitude=Number(params.get("lon")??params.get("longitude"));
-    const latitude=Number(params.get("lat")??params.get("latitude"));
+  }else if(action==="save"){
+    const longitude=parseCoordinate(params.get("lon")??params.get("longitude"));
+    const latitude=parseCoordinate(params.get("lat")??params.get("latitude"));
     const requestedAccuracy=Number.parseInt(params.get("acc")??params.get("accuracy")??"25",10);
     const accuracy=Number.isFinite(requestedAccuracy)&&requestedAccuracy>0?requestedAccuracy:25;
 
@@ -98,13 +101,14 @@ try{
       const saved={
         longitude,
         latitude,
-        accuracy,
-        updatedAt:new Date().toISOString()
+        accuracy
       };
       result=writeSettings(saved)
         ?{success:true,longitude,latitude,accuracy}
         :{success:false,error:"写入失败"};
     }
+  }else{
+    result={success:false,error:"不支持的操作"};
   }
 }catch(error){
   result={success:false,error:error&&error.message?error.message:"操作失败"};
@@ -115,8 +119,7 @@ $done({
     status:200,
     headers:{
       "Content-Type":"application/json",
-      "Access-Control-Allow-Origin":"*",
-      "Access-Control-Allow-Methods":"GET, OPTIONS"
+      "Access-Control-Allow-Origin":"*"
     },
     body:JSON.stringify(result)
   }
