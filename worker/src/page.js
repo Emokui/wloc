@@ -530,9 +530,11 @@ function queryActive() {
   fetch(SAVE_API + '?action=query', { method:'GET', mode:'cors', cache:'no-store' })
     .then(r => r.json())
     .then(d => {
-      if (d.success && d.longitude && d.latitude) {
-        activeLon = parseFloat(d.longitude);
-        activeLat = parseFloat(d.latitude);
+      const queriedLon = Number(d.longitude);
+      const queriedLat = Number(d.latitude);
+      if (d.success && Number.isFinite(queriedLon) && Number.isFinite(queriedLat)) {
+        activeLon = queriedLon;
+        activeLat = queriedLat;
         el.textContent = '经度 ' + activeLon.toFixed(6) + '  纬度 ' + activeLat.toFixed(6) + (d.accuracy ? '  精度 ' + d.accuracy + 'm' : '');
         renderFavs();
       } else {
