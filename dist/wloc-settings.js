@@ -1,5 +1,5 @@
 /* wloc-settings.js - Surge only - 2026-07-26 */
-const STORE_KEY="wloc_settings";
+const STORE_KEY="emokui_wloc_settings_v1";
 
 function decodeQueryPart(value){
   try{return decodeURIComponent(String(value).replace(/\+/g," "))}
