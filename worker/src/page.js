@@ -5,7 +5,9 @@ export function getPageHtml() {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>WLOC</title>
-<meta name="theme-color" content="#2563eb">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#edf2f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b1018" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="WLOC">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -17,6 +19,7 @@ export function getPageHtml() {
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>
 <style>
 :root {
+  color-scheme:light;
   --blue:#2563eb;
   --blue-dark:#1d4ed8;
   --blue-soft:#eef4ff;
@@ -298,10 +301,84 @@ button { -webkit-tap-highlight-color:transparent; }
 .modal .modal-btns { display:flex; gap:9px; }
 .modal .modal-btns .btn { padding:11px; }
 .btn:focus-visible,.layer-btn:focus-visible,.modal input:focus-visible,.input-row textarea:focus-visible { outline:3px solid rgba(37,99,235,.25); outline-offset:2px; }
+@media (prefers-color-scheme:dark) {
+  :root {
+    color-scheme:dark;
+    --blue:#60a5fa;
+    --blue-dark:#2563eb;
+    --blue-soft:rgba(59,130,246,.14);
+    --green:#42d392;
+    --red:#ff6b70;
+    --ink:#eef3f9;
+    --muted:#9aa6b5;
+    --line:rgba(255,255,255,.1);
+    --surface:rgba(18,25,36,.96);
+    --soft:#17202d;
+    --bg:#0b1018;
+    --shadow:0 18px 50px rgba(0,0,0,.34);
+  }
+  body {
+    background:
+      radial-gradient(circle at 15% 0%,rgba(59,130,246,.16),transparent 35%),
+      linear-gradient(180deg,#111827 0%,var(--bg) 100%);
+  }
+  .map-shell { background:#151d29; }
+  .layer-switch {
+    border-color:rgba(255,255,255,.1);
+    background:rgba(18,25,36,.9);
+    box-shadow:0 8px 30px rgba(0,0,0,.34);
+  }
+  .layer-btn { color:#b8c2cf; }
+  .leaflet-control-zoom { box-shadow:0 8px 24px rgba(0,0,0,.3)!important; }
+  .leaflet-control-zoom a {
+    color:var(--ink)!important;
+    border-color:var(--line)!important;
+    background:rgba(18,25,36,.94)!important;
+  }
+  .leaflet-control-zoom a:hover { background:#202b39!important; }
+  .leaflet-control-attribution {
+    color:#aeb8c5!important;
+    background:rgba(18,25,36,.82)!important;
+  }
+  .leaflet-control-attribution a { color:#bfdbfe!important; }
+  .card { border-color:rgba(255,255,255,.08); }
+  .coords {
+    color:#bfdbfe;
+    border-color:rgba(96,165,250,.2);
+    background:linear-gradient(135deg,rgba(37,99,235,.16),#131c28);
+  }
+  .btn-secondary { color:#d6deea; }
+  .btn-secondary:active { background:#202c3b; }
+  .input-row textarea::placeholder,.modal input::placeholder { color:#758196; }
+  .input-row textarea:focus,.modal input:focus { background:#111923; }
+  .search-btn { color:#111827; background:#e6edf7; }
+  .search-btn:active { background:#cdd7e4; }
+  .error-banner {
+    color:#fecaca;
+    border-color:rgba(255,107,112,.2);
+    background:rgba(73,23,29,.92);
+    box-shadow:0 12px 36px rgba(0,0,0,.22);
+  }
+  .toast {
+    border-color:rgba(255,255,255,.1);
+    background:rgba(5,10,17,.92);
+    box-shadow:0 12px 35px rgba(0,0,0,.4);
+  }
+  .modal-overlay { background:rgba(3,7,13,.68); }
+  .modal {
+    border-color:rgba(255,255,255,.1);
+    background:#111923;
+    box-shadow:0 28px 80px rgba(0,0,0,.55);
+  }
+}
 @media (hover:hover) {
   .btn-primary:hover { transform:translateY(-1px); box-shadow:0 10px 22px rgba(37,99,235,.3); }
   .btn-secondary:hover { background:#edf1f6; }
   .fav-item:hover { border-color:var(--line); background:#f0f4f9; }
+}
+@media (hover:hover) and (prefers-color-scheme:dark) {
+  .btn-secondary:hover { background:#202c3b; }
+  .fav-item:hover { background:#1c2633; }
 }
 @media(max-width:540px) {
   #map { height:46vh; min-height:330px; }
