@@ -184,10 +184,13 @@ button { -webkit-tap-highlight-color:transparent; }
 .leaflet-control-zoom a { color:var(--ink)!important; border-color:var(--line)!important; background:var(--zoom-bg)!important; }
 .leaflet-control-zoom a:hover { background:var(--zoom-hover)!important; }
 .leaflet-control-attribution {
-  padding:2px 5px!important;
+  max-width:min(82vw,760px);
+  padding:3px 6px!important;
   color:var(--attribution-text)!important;
   background:var(--attribution-bg)!important;
-  font-size:9px!important;
+  font-size:10px!important;
+  line-height:1.25!important;
+  white-space:normal;
   backdrop-filter:blur(8px);
   -webkit-backdrop-filter:blur(8px);
 }
@@ -437,7 +440,7 @@ button { -webkit-tap-highlight-color:transparent; }
   #map { height:46vh; min-height:330px; }
   .panel { padding:18px 12px calc(72px + env(safe-area-inset-bottom)); }
   .card { padding:17px; border-radius:19px; }
-  .layer-switch { right:12px; bottom:42px; }
+  .layer-switch { right:12px; bottom:68px; }
   .layer-btn { padding:7px 9px; font-size:11px; }
   .input-row { grid-template-columns:1fr; }
   .input-row textarea { min-height:48px; height:48px; }
@@ -473,9 +476,9 @@ button { -webkit-tap-highlight-color:transparent; }
     </div>
     <div class="input-row">
       <textarea id="searchInput" rows="1" placeholder="输入或粘贴地址" aria-label="地点或地址" autocomplete="street-address" enterkeyhint="search"></textarea>
-      <button type="button" class="btn search-btn" onclick="searchPlace()">搜索</button>
+      <button type="button" class="btn search-btn" id="searchBtn" onclick="searchPlace()">搜索</button>
     </div>
-    <div class="helper">支持多行地址 · Shift + Enter 换行</div>
+    <div class="helper">支持多行地址 · Shift + Enter 换行 · 搜索数据 © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a></div>
   </div>
   <div class="card">
     <div class="card-heading">
@@ -581,9 +584,16 @@ applyTheme(themePreference, false);
 
 const map = L.map('map').setView([20, 0], 2);
 map.attributionControl.setPrefix(false);
+const esriLink = '<a href="https://www.esri.com/" target="_blank" rel="noopener">Powered by Esri</a>';
 const tiles = {
-  satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom:19, attribution:'ArcGIS'}),
-  street: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {maxZoom:19, attribution:'ArcGIS'}),
+  satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom:19,
+    attribution:esriLink + ' · Source: Esri, Vantor, Earthstar Geographics, and the GIS User Community'
+  }),
+  street: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom:19,
+    attribution:esriLink + ' · Sources: Esri, HERE, Garmin, USGS, Intermap, INCREMENT P, NRCan, Esri Japan, METI, Esri China (Hong Kong), Esri Korea, Esri (Thailand), NGCC, © OpenStreetMap contributors, and the GIS User Community'
+  }),
   standard: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom:19,
     attribution:'\\u00a9 <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>'
@@ -788,19 +798,96 @@ function locateMe() {
   );
 }
 
+const SEARCH_CACHE_KEY = 'wloc_search_cache_v1';
+const SEARCH_CACHE_TTL = 24 * 60 * 60 * 1000;
+const SEARCH_MIN_INTERVAL = 1000;
+let searchPending = false;
+let lastSearchStartedAt = 0;
+
+function readCachedSearch(query) {
+  try {
+    const cache = JSON.parse(sessionStorage.getItem(SEARCH_CACHE_KEY) || '{}');
+    const entry = cache[query.toLowerCase()];
+    if (entry && Date.now() - entry.savedAt < SEARCH_CACHE_TTL && Array.isArray(entry.results)) {
+      return entry.results;
+    }
+  } catch (e) {}
+  return null;
+}
+
+function writeCachedSearch(query, results) {
+  try {
+    const now = Date.now();
+    const cache = JSON.parse(sessionStorage.getItem(SEARCH_CACHE_KEY) || '{}');
+    Object.keys(cache).forEach(key => {
+      if (!cache[key] || now - cache[key].savedAt >= SEARCH_CACHE_TTL) delete cache[key];
+    });
+    cache[query.toLowerCase()] = {savedAt:now, results:results};
+    const keys = Object.keys(cache);
+    if (keys.length > 20) {
+      keys.sort((a, b) => cache[a].savedAt - cache[b].savedAt)
+        .slice(0, keys.length - 20)
+        .forEach(key => delete cache[key]);
+    }
+    sessionStorage.setItem(SEARCH_CACHE_KEY, JSON.stringify(cache));
+  } catch (e) {}
+}
+
+function showSearchResult(results, query) {
+  if (!results.length) {
+    toast('未找到: ' + query, 3000);
+    return;
+  }
+  const result = results[0];
+  const resultLat = Number.parseFloat(result.lat);
+  const resultLon = Number.parseFloat(result.lon);
+  if (!Number.isFinite(resultLat) || resultLat < -90 || resultLat > 90 ||
+      !Number.isFinite(resultLon) || resultLon < -180 || resultLon > 180) {
+    throw new Error('搜索结果坐标无效');
+  }
+  moveTo(resultLat, resultLon, 15);
+  toast(String(result.display_name || query).slice(0, 40));
+}
+
 async function searchPlace() {
   const raw = document.getElementById('searchInput').value.trim();
   if (!raw) return toast('请输入地点或地址');
   const q = raw.split(/\\r?\\n/).map(part => part.trim()).filter(Boolean).join(', ');
+  const cachedResults = readCachedSearch(q);
+  if (cachedResults) {
+    showSearchResult(cachedResults, q);
+    return;
+  }
+  if (searchPending) return toast('正在搜索，请稍候');
+  if (Date.now() - lastSearchStartedAt < SEARCH_MIN_INTERVAL) {
+    return toast('请稍候 1 秒再搜索');
+  }
+  const searchButton = document.getElementById('searchBtn');
+  searchPending = true;
+  lastSearchStartedAt = Date.now();
+  searchButton.disabled = true;
+  searchButton.setAttribute('aria-busy', 'true');
+  searchButton.textContent = '搜索中';
   toast('搜索中...');
   try {
-    const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(q));
+    const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(q), {
+      method:'GET',
+      headers:{Accept:'application/json'},
+      cache:'no-store'
+    });
+    if (!r.ok) throw new Error('搜索服务响应异常');
     const results = await r.json();
-    if (!results.length) { toast('未找到: ' + q, 3000); return; }
-    const p = results[0];
-    moveTo(parseFloat(p.lat), parseFloat(p.lon), 15);
-    toast(p.display_name.slice(0, 40));
-  } catch(e) { toast('搜索失败', 3000); }
+    if (!Array.isArray(results)) throw new Error('搜索服务返回格式异常');
+    writeCachedSearch(q, results);
+    showSearchResult(results, q);
+  } catch(e) {
+    toast('搜索失败', 3000);
+  } finally {
+    searchPending = false;
+    searchButton.disabled = false;
+    searchButton.removeAttribute('aria-busy');
+    searchButton.textContent = '搜索';
+  }
 }
 
 const searchInput = document.getElementById('searchInput');
