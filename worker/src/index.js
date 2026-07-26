@@ -1,15 +1,17 @@
-import { Hono } from "hono/tiny";
-import { getPageHtml } from "./page.js";
+import { getPageHtml } from "../src/page.js";
 
-const app = new Hono();
+export function onRequest({ request }) {
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    return new Response("Method Not Allowed", {
+      status: 405,
+      headers: { Allow: "GET, HEAD" }
+    });
+  }
 
-app.get("/", (c) => {
-  return c.html(getPageHtml());
-});
-
-app.onError((e, c) => {
-  console.error(`${e}`);
-  return c.text(`${e}`, 500);
-});
-
-export default app;
+  return new Response(request.method === "HEAD" ? null : getPageHtml(), {
+    headers: {
+      "Content-Type": "text/html; charset=UTF-8",
+      "Cache-Control": "no-store"
+    }
+  });
+}
