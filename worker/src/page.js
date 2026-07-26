@@ -474,11 +474,11 @@ button { -webkit-tap-highlight-color:transparent; }
 <script>
 const SAVE_API = 'https://gs-loc.apple.com/wloc-settings/save';
 const FAV_KEY = 'wloc_favorites';
-let lat = 22.544577, lon = 113.94114;
+let lat = null, lon = null;
 let selected = false;
 let activeLon = null, activeLat = null;
 
-const map = L.map('map').setView([lat, lon], 13);
+const map = L.map('map').setView([20, 0], 2);
 map.attributionControl.setPrefix(false);
 const tiles = {
   satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom:19, attribution:'ArcGIS'}),
@@ -496,14 +496,21 @@ function switchLayer(name) {
   currentLayer.addTo(map);
   document.querySelectorAll('.layer-btn').forEach(b => b.classList.toggle('active', b.dataset.layer === name));
 }
-let marker = L.marker([lat, lon], {draggable:true}).addTo(map);
 
-marker.on('dragend', e => { const p=e.target.getLatLng(); setPos(p.lat, p.lng); });
+let marker = null;
 map.on('click', e => { setPos(e.latlng.lat, e.latlng.lng); });
 
 function setPos(newLat, newLon) {
   lat = newLat; lon = newLon; selected = true;
-  marker.setLatLng([lat, lon]);
+  if (marker) {
+    marker.setLatLng([lat, lon]);
+  } else {
+    marker = L.marker([lat, lon], {draggable:true}).addTo(map);
+    marker.on('dragend', e => {
+      const p = e.target.getLatLng();
+      setPos(p.lat, p.lng);
+    });
+  }
   document.getElementById('coords').textContent = '经度 ' + lon.toFixed(6) + '  纬度 ' + lat.toFixed(6);
 }
 
@@ -616,10 +623,11 @@ function queryActive() {
         activeLon = queriedLon;
         activeLat = queriedLat;
         el.textContent = '经度 ' + activeLon.toFixed(6) + '  纬度 ' + activeLat.toFixed(6) + (d.accuracy ? '  精度 ' + d.accuracy + 'm' : '');
+        moveTo(activeLat, activeLon, 15);
         renderFavs();
       } else {
         activeLon = null; activeLat = null;
-        el.textContent = '无已保存的坐标';
+        el.textContent = d.error || '未设置有效坐标';
         renderFavs();
       }
     })
@@ -634,10 +642,8 @@ function clearActive() {
     .then(r => r.json())
     .then(d => {
       if (d.success) {
-        activeLon = null; activeLat = null;
-        document.getElementById('activeValue').textContent = '已清除';
-        renderFavs();
-        toast('已清除设备坐标');
+        toast('已清除设备坐标，恢复模块参数');
+        queryActive();
       } else { toast('清除失败: ' + (d.error || ''), 3000); }
     })
     .catch(() => { toast('清除失败 - 请检查模块配置', 3000); });
