@@ -10,72 +10,378 @@ export function getPageHtml() {
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>
 <style>
-:root { --blue:#007aff; --green:#34c759; --red:#ff3b30; --gray:#8e8e93; --bg:#f2f2f7; --orange:#ff9500; }
+:root {
+  --blue:#2563eb;
+  --blue-dark:#1d4ed8;
+  --blue-soft:#eef4ff;
+  --green:#16a364;
+  --red:#e5484d;
+  --ink:#172033;
+  --muted:#6b7485;
+  --line:rgba(23,32,51,.09);
+  --surface:rgba(255,255,255,.96);
+  --soft:#f4f7fb;
+  --bg:#edf2f7;
+  --shadow:0 18px 50px rgba(35,55,80,.12);
+}
 * { margin:0; padding:0; box-sizing:border-box; }
-body { font-family:-apple-system,system-ui,"SF Pro","Helvetica Neue",sans-serif; background:var(--bg); }
-#map { height:50vh; width:100%; min-height:250px; }
-.panel { padding:16px; max-width:600px; margin:0 auto; }
-.card { background:#fff; border-radius:12px; padding:16px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,.08); }
-.card h3 { font-size:15px; font-weight:600; margin-bottom:10px; }
-.coords { font-family:"SF Mono",monospace; font-size:14px; color:#333; padding:8px 12px; background:var(--bg); border-radius:8px; word-break:break-all; }
-.row { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
-.btn { flex:1; min-width:100px; padding:12px 16px; border:none; border-radius:10px; font-size:14px; font-weight:500; cursor:pointer; transition:all .15s; }
-.btn-primary { background:var(--blue); color:#fff; }
-.btn-primary:active { background:#005bb5; transform:scale(.97); }
-.btn-secondary { background:#e5e5ea; color:#333; }
-.btn-secondary:active { background:#d1d1d6; transform:scale(.97); }
-.btn-danger { background:var(--red); color:#fff; }
-.btn-danger:active { background:#d63027; transform:scale(.97); }
-.btn.success { background:var(--green); color:#fff; }
-.btn-sm { flex:none; min-width:auto; padding:6px 12px; font-size:12px; border-radius:8px; }
-.input-row { display:flex; gap:8px; margin-top:10px; align-items:flex-start; }
-.input-row textarea { flex:1; min-height:76px; padding:10px 12px; border:1px solid #d1d1d6; border-radius:8px; font:inherit; font-size:14px; line-height:1.4; outline:none; min-width:0; resize:vertical; }
-.input-row textarea:focus { border-color:var(--blue); }
-.status { font-size:12px; color:var(--gray); margin-top:8px; text-align:center; }
-.error-banner { background:var(--red); color:#fff; padding:14px 16px; border-radius:12px; margin-bottom:12px; font-size:14px; line-height:1.5; display:none; }
-.error-banner b { display:block; margin-bottom:4px; }
-.toast { position:fixed; top:60px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,.8); color:#fff; padding:10px 20px; border-radius:20px; font-size:14px; opacity:0; transition:opacity .3s; pointer-events:none; z-index:9999; max-width:90vw; text-align:center; }
-.toast.show { opacity:1; }
-.active-loc { background:var(--bg); border-radius:8px; padding:10px 12px; font-size:13px; color:#333; }
-.active-loc .label { font-size:11px; color:var(--gray); margin-bottom:4px; }
-.active-loc .value { font-family:"SF Mono",monospace; font-size:13px; }
-.fav-list { max-height:240px; overflow-y:auto; }
-.fav-item { display:flex; align-items:center; gap:8px; padding:10px 12px; background:var(--bg); border-radius:8px; margin-bottom:6px; cursor:pointer; transition:background .15s; }
-.fav-item:active { background:#e0e0e5; }
-.fav-item .fav-info { flex:1; min-width:0; }
-.fav-item .fav-name { font-size:14px; font-weight:500; color:#333; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.fav-item .fav-coords { font-size:11px; color:var(--gray); font-family:"SF Mono",monospace; margin-top:2px; }
-.fav-item .fav-active { font-size:10px; color:var(--green); font-weight:600; }
-.fav-item .fav-del { flex:none; width:28px; height:28px; border:none; border-radius:50%; background:transparent; color:var(--red); font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .15s; }
-.fav-item .fav-del:hover { background:rgba(255,59,48,.1); }
-.fav-empty { text-align:center; color:var(--gray); font-size:13px; padding:16px 0; }
-.fav-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
-.fav-header h3 { margin-bottom:0; }
-.modal-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,.4); z-index:10000; display:none; align-items:center; justify-content:center; padding:20px; }
-.modal-overlay.show { display:flex; }
-.modal { background:#fff; border-radius:16px; padding:20px; width:100%; max-width:340px; }
-.modal h3 { font-size:17px; font-weight:600; margin-bottom:16px; text-align:center; }
-.modal input { width:100%; padding:12px; border:1px solid #d1d1d6; border-radius:10px; font-size:15px; outline:none; margin-bottom:12px; }
-.modal input:focus { border-color:var(--blue); }
-.modal .modal-btns { display:flex; gap:8px; }
-.modal .modal-btns .btn { padding:12px; }
-.layer-switch { position:absolute; top:10px; right:10px; z-index:1000; display:flex; gap:4px; background:rgba(255,255,255,.92); border-radius:8px; padding:4px; box-shadow:0 2px 8px rgba(0,0,0,.15); }
-.layer-btn { border:none; background:transparent; padding:6px 10px; border-radius:6px; font-size:12px; font-weight:500; color:#333; cursor:pointer; transition:all .15s; white-space:nowrap; }
-.layer-btn.active { background:var(--blue); color:#fff; }
+html { background:var(--bg); }
+body {
+  min-height:100vh;
+  color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",sans-serif;
+  background:
+    radial-gradient(circle at 15% 0%, rgba(37,99,235,.08), transparent 35%),
+    linear-gradient(180deg,#f8fafc 0%,var(--bg) 100%);
+  -webkit-font-smoothing:antialiased;
+}
+button,input,textarea { font:inherit; }
+button { -webkit-tap-highlight-color:transparent; }
+.map-shell { position:relative; background:#dce5ef; overflow:hidden; }
+#map { height:clamp(340px,52vh,580px); width:100%; }
+.map-brand {
+  position:absolute;
+  top:max(14px,env(safe-area-inset-top));
+  left:14px;
+  z-index:1000;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:9px 12px 9px 9px;
+  color:var(--ink);
+  border:1px solid rgba(255,255,255,.72);
+  border-radius:16px;
+  background:rgba(255,255,255,.88);
+  box-shadow:0 8px 30px rgba(20,35,55,.16);
+  backdrop-filter:blur(18px) saturate(150%);
+  -webkit-backdrop-filter:blur(18px) saturate(150%);
+}
+.brand-mark {
+  width:30px;
+  height:30px;
+  display:grid;
+  place-items:center;
+  color:#fff;
+  border-radius:10px;
+  background:linear-gradient(145deg,#3b82f6,#1d4ed8);
+  box-shadow:0 5px 12px rgba(37,99,235,.3);
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:-.02em;
+}
+.brand-copy { display:flex; flex-direction:column; line-height:1.1; }
+.brand-copy strong { font-size:14px; letter-spacing:.01em; }
+.brand-copy span { margin-top:3px; color:var(--muted); font-size:10px; }
+.map-hint {
+  position:absolute;
+  left:14px;
+  bottom:48px;
+  z-index:1000;
+  padding:8px 11px;
+  color:#fff;
+  border-radius:12px;
+  background:rgba(19,29,44,.7);
+  box-shadow:0 6px 20px rgba(0,0,0,.15);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  font-size:11px;
+  font-weight:600;
+  pointer-events:none;
+}
+.layer-switch {
+  position:absolute;
+  right:14px;
+  bottom:48px;
+  z-index:1000;
+  display:flex;
+  gap:3px;
+  padding:4px;
+  border:1px solid rgba(255,255,255,.72);
+  border-radius:14px;
+  background:rgba(255,255,255,.9);
+  box-shadow:0 8px 30px rgba(20,35,55,.16);
+  backdrop-filter:blur(18px) saturate(150%);
+  -webkit-backdrop-filter:blur(18px) saturate(150%);
+}
+.layer-btn {
+  border:0;
+  padding:8px 11px;
+  color:#4d586b;
+  border-radius:10px;
+  background:transparent;
+  cursor:pointer;
+  font-size:12px;
+  font-weight:650;
+  transition:background .2s,color .2s,transform .15s,box-shadow .2s;
+  white-space:nowrap;
+}
+.layer-btn.active {
+  color:#fff;
+  background:linear-gradient(145deg,#3b82f6,var(--blue-dark));
+  box-shadow:0 4px 10px rgba(37,99,235,.28);
+}
 .layer-btn:active { transform:scale(.95); }
-@media(max-width:480px) { #map { height:44vh; } .panel { padding:12px; } .layer-btn { padding:5px 7px; font-size:11px; } }
+.leaflet-control-zoom { border:0!important; border-radius:13px!important; overflow:hidden; box-shadow:0 8px 24px rgba(20,35,55,.15)!important; }
+.leaflet-control-zoom a { color:var(--ink)!important; border-color:var(--line)!important; background:rgba(255,255,255,.92)!important; }
+.panel {
+  position:relative;
+  z-index:1100;
+  max-width:700px;
+  margin:-30px auto 0;
+  padding:0 16px calc(34px + env(safe-area-inset-bottom));
+}
+.sheet-handle {
+  width:42px;
+  height:5px;
+  margin:0 auto 14px;
+  border-radius:99px;
+  background:rgba(255,255,255,.9);
+  box-shadow:0 2px 8px rgba(20,35,55,.12);
+}
+.card {
+  margin-bottom:14px;
+  padding:20px;
+  border:1px solid rgba(255,255,255,.75);
+  border-radius:22px;
+  background:var(--surface);
+  box-shadow:var(--shadow);
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
+}
+.card-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:14px; }
+.card h3 { font-size:17px; font-weight:750; letter-spacing:-.02em; }
+.card-heading p { margin-top:4px; color:var(--muted); font-size:12px; line-height:1.45; }
+.coords {
+  min-height:48px;
+  display:flex;
+  align-items:center;
+  padding:13px 14px;
+  color:#24406f;
+  border:1px solid rgba(37,99,235,.1);
+  border-radius:14px;
+  background:linear-gradient(135deg,var(--blue-soft),#f8fbff);
+  font-family:"SF Mono",ui-monospace,Menlo,monospace;
+  font-size:13px;
+  font-weight:600;
+  line-height:1.5;
+  word-break:break-all;
+}
+.row { display:flex; gap:9px; margin-top:12px; flex-wrap:wrap; }
+.btn {
+  flex:1;
+  min-width:104px;
+  min-height:44px;
+  padding:11px 15px;
+  border:1px solid transparent;
+  border-radius:13px;
+  cursor:pointer;
+  font-size:14px;
+  font-weight:650;
+  transition:transform .15s,box-shadow .2s,background .2s,color .2s,opacity .2s;
+}
+.btn:disabled { opacity:.6; cursor:default; }
+.btn-primary {
+  color:#fff;
+  background:linear-gradient(145deg,#3b82f6,var(--blue-dark));
+  box-shadow:0 8px 18px rgba(37,99,235,.24);
+}
+.btn-primary:active { transform:scale(.98); box-shadow:0 4px 10px rgba(37,99,235,.2); }
+.btn-secondary { color:#344054; border-color:var(--line); background:var(--soft); }
+.btn-secondary:active { background:#e8edf4; transform:scale(.98); }
+.btn-danger { color:var(--red); border-color:rgba(229,72,77,.14); background:rgba(229,72,77,.08); }
+.btn-danger:active { background:rgba(229,72,77,.14); transform:scale(.98); }
+.btn.success { color:#fff; border-color:transparent; background:linear-gradient(145deg,#27b773,#128954); box-shadow:0 8px 18px rgba(22,163,100,.22); }
+.btn-sm { flex:none; min-width:auto; min-height:36px; padding:8px 12px; border-radius:11px; font-size:12px; }
+.input-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; align-items:stretch; }
+.input-row textarea {
+  width:100%;
+  min-height:88px;
+  padding:13px 14px;
+  color:var(--ink);
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:var(--soft);
+  outline:none;
+  resize:vertical;
+  font-size:14px;
+  line-height:1.5;
+  transition:border-color .2s,box-shadow .2s,background .2s;
+}
+.input-row textarea::placeholder { color:#98a2b3; }
+.input-row textarea:focus { border-color:rgba(37,99,235,.5); background:#fff; box-shadow:0 0 0 4px rgba(37,99,235,.1); }
+.search-btn { min-width:74px; color:#fff; background:var(--ink); box-shadow:none; }
+.search-btn:active { background:#253147; transform:scale(.98); }
+.helper { margin-top:8px; color:var(--muted); font-size:11px; line-height:1.45; }
+.status {
+  width:max-content;
+  max-width:100%;
+  margin:18px auto 0;
+  padding:9px 13px;
+  color:var(--muted);
+  border:1px solid rgba(255,255,255,.8);
+  border-radius:99px;
+  background:rgba(255,255,255,.7);
+  box-shadow:0 6px 20px rgba(35,55,80,.08);
+  font-size:11px;
+  text-align:center;
+}
+.error-banner {
+  display:none;
+  margin-bottom:14px;
+  padding:16px 18px;
+  color:#8f2428;
+  border:1px solid rgba(229,72,77,.15);
+  border-radius:18px;
+  background:rgba(255,241,242,.96);
+  box-shadow:0 12px 36px rgba(120,30,35,.1);
+  font-size:13px;
+  line-height:1.6;
+}
+.error-banner b { display:block; margin-bottom:4px; font-size:15px; }
+.toast {
+  position:fixed;
+  left:50%;
+  bottom:calc(24px + env(safe-area-inset-bottom));
+  z-index:20000;
+  max-width:calc(100vw - 32px);
+  padding:11px 18px;
+  color:#fff;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:99px;
+  background:rgba(20,29,43,.9);
+  box-shadow:0 12px 35px rgba(0,0,0,.2);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  opacity:0;
+  transform:translate(-50%,10px);
+  pointer-events:none;
+  font-size:13px;
+  text-align:center;
+  transition:opacity .25s,transform .25s;
+}
+.toast.show { opacity:1; transform:translate(-50%,0); }
+.active-loc {
+  padding:14px;
+  color:var(--ink);
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:var(--soft);
+  font-size:13px;
+}
+.active-loc .label { margin-bottom:6px; color:var(--muted); font-size:10px; font-weight:650; letter-spacing:.04em; text-transform:uppercase; }
+.active-loc .value { font-family:"SF Mono",ui-monospace,Menlo,monospace; font-size:12px; line-height:1.5; }
+.fav-list { max-height:260px; overflow-y:auto; }
+.fav-item {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:8px;
+  padding:12px 13px;
+  border:1px solid transparent;
+  border-radius:14px;
+  background:var(--soft);
+  cursor:pointer;
+  transition:background .18s,border-color .18s,transform .15s;
+}
+.fav-item:last-child { margin-bottom:0; }
+.fav-item:active { background:var(--blue-soft); border-color:rgba(37,99,235,.1); transform:scale(.99); }
+.fav-item .fav-info { flex:1; min-width:0; }
+.fav-item .fav-name { overflow:hidden; color:var(--ink); font-size:14px; font-weight:650; text-overflow:ellipsis; white-space:nowrap; }
+.fav-item .fav-coords { margin-top:3px; color:var(--muted); font-family:"SF Mono",ui-monospace,Menlo,monospace; font-size:10px; }
+.fav-item .fav-active { margin-top:4px; color:var(--green); font-size:10px; font-weight:700; }
+.fav-item .fav-del {
+  flex:none;
+  width:32px;
+  height:32px;
+  display:grid;
+  place-items:center;
+  color:var(--red);
+  border:0;
+  border-radius:50%;
+  background:transparent;
+  cursor:pointer;
+  font-size:17px;
+  transition:background .15s;
+}
+.fav-item .fav-del:hover { background:rgba(229,72,77,.09); }
+.fav-empty { padding:22px 0 12px; color:var(--muted); font-size:12px; text-align:center; }
+.fav-header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; }
+.fav-header h3 { margin:0; }
+.modal-overlay {
+  position:fixed;
+  inset:0;
+  z-index:30000;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  background:rgba(12,19,31,.42);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+}
+.modal-overlay.show { display:flex; }
+.modal {
+  width:100%;
+  max-width:360px;
+  padding:22px;
+  border:1px solid rgba(255,255,255,.8);
+  border-radius:24px;
+  background:#fff;
+  box-shadow:0 28px 80px rgba(10,20,35,.3);
+}
+.modal h3 { margin-bottom:16px; font-size:18px; font-weight:750; text-align:center; letter-spacing:-.02em; }
+.modal input {
+  width:100%;
+  margin-bottom:12px;
+  padding:13px 14px;
+  color:var(--ink);
+  border:1px solid var(--line);
+  border-radius:13px;
+  background:var(--soft);
+  outline:none;
+  font-size:15px;
+}
+.modal input:focus { border-color:rgba(37,99,235,.5); background:#fff; box-shadow:0 0 0 4px rgba(37,99,235,.1); }
+.modal .modal-btns { display:flex; gap:9px; }
+.modal .modal-btns .btn { padding:11px; }
+.btn:focus-visible,.layer-btn:focus-visible,.modal input:focus-visible,.input-row textarea:focus-visible { outline:3px solid rgba(37,99,235,.25); outline-offset:2px; }
+@media (hover:hover) {
+  .btn-primary:hover { transform:translateY(-1px); box-shadow:0 10px 22px rgba(37,99,235,.3); }
+  .btn-secondary:hover { background:#edf1f6; }
+  .fav-item:hover { border-color:var(--line); background:#f0f4f9; }
+}
+@media(max-width:540px) {
+  #map { height:46vh; min-height:330px; }
+  .panel { margin-top:-26px; padding-inline:12px; }
+  .card { padding:17px; border-radius:19px; }
+  .map-hint { display:none; }
+  .layer-switch { right:12px; bottom:42px; }
+  .layer-btn { padding:7px 9px; font-size:11px; }
+  .input-row { grid-template-columns:1fr; }
+  .input-row textarea { min-height:82px; }
+  .search-btn { width:100%; }
+}
 </style>
 </head>
 <body>
-<div style="position:relative">
+<div class="map-shell">
 <div id="map"></div>
+<div class="map-brand">
+  <div class="brand-mark">W</div>
+  <div class="brand-copy">
+    <strong>WLOC</strong>
+    <span>位置选择器</span>
+  </div>
+</div>
+<div class="map-hint">轻触地图选择位置</div>
 <div class="layer-switch">
-  <button class="layer-btn active" data-layer="satellite" onclick="switchLayer('satellite')">卫星</button>
-  <button class="layer-btn" data-layer="wgs84" onclick="switchLayer('wgs84')">WGS84</button>
-  <button class="layer-btn" data-layer="standard" onclick="switchLayer('standard')">标准</button>
+  <button type="button" class="layer-btn active" data-layer="satellite" onclick="switchLayer('satellite')">卫星</button>
+  <button type="button" class="layer-btn" data-layer="wgs84" onclick="switchLayer('wgs84')">WGS84</button>
+  <button type="button" class="layer-btn" data-layer="standard" onclick="switchLayer('standard')">标准</button>
 </div>
 </div>
 <div class="panel">
+  <div class="sheet-handle" aria-hidden="true"></div>
   <div class="error-banner" id="errorBanner">
     <b>模块未生效</b>
     请检查以下配置：<br>
@@ -85,51 +391,66 @@ body { font-family:-apple-system,system-ui,"SF Pro","Helvetica Neue",sans-serif;
     4. 当前网络已走代理
   </div>
   <div class="card">
-    <h3>选择目标位置</h3>
-    <div class="coords" id="coords">点击地图或使用下方工具选择位置</div>
+    <div class="card-heading">
+      <div>
+        <h3>搜索地点</h3>
+        <p>输入地址、街道名称或邮政编码</p>
+      </div>
+    </div>
+    <div class="input-row">
+      <textarea id="searchInput" rows="3" placeholder="输入或粘贴地址" aria-label="地点或地址" autocomplete="street-address" enterkeyhint="search"></textarea>
+      <button type="button" class="btn search-btn" onclick="searchPlace()">搜索</button>
+    </div>
+    <div class="helper">支持多行地址 · Shift + Enter 换行</div>
+  </div>
+  <div class="card">
+    <div class="card-heading">
+      <div>
+        <h3>选择目标位置</h3>
+        <p>搜索后微调标记，或直接轻触地图选点</p>
+      </div>
+    </div>
+    <div class="coords" id="coords">尚未选择目标位置</div>
     <div class="row">
-      <button class="btn btn-primary" id="saveBtn" onclick="save()">储存到设备</button>
-      <button class="btn btn-secondary" onclick="addFav()">收藏位置</button>
-      <button class="btn btn-secondary" onclick="locateMe()">当前位置</button>
+      <button type="button" class="btn btn-primary" id="saveBtn" onclick="save()">储存到设备</button>
+      <button type="button" class="btn btn-secondary" onclick="addFav()">收藏位置</button>
+      <button type="button" class="btn btn-secondary" onclick="locateMe()">当前位置</button>
     </div>
   </div>
   <div class="card">
-    <div class="fav-header">
-      <h3>收藏的位置</h3>
-      <button class="btn btn-sm btn-secondary" onclick="clearAllFav()" id="clearAllBtn" style="display:none">清空全部</button>
+    <div class="card-heading">
+      <div>
+        <h3>当前生效坐标</h3>
+        <p>读取 Surge 中保存的设备端坐标</p>
+      </div>
     </div>
-    <div id="favList" class="fav-list"></div>
-  </div>
-  <div class="card">
-    <h3>当前生效坐标</h3>
     <div class="active-loc" id="activeLoc">
       <div class="label">设备持久化数据 (wloc_settings)</div>
       <div class="value" id="activeValue">查询中...</div>
     </div>
     <div class="row">
-      <button class="btn btn-sm btn-secondary" onclick="queryActive()">刷新</button>
-      <button class="btn btn-sm btn-danger" onclick="clearActive()">清除数据</button>
+      <button type="button" class="btn btn-sm btn-secondary" onclick="queryActive()">刷新</button>
+      <button type="button" class="btn btn-sm btn-danger" onclick="clearActive()">清除数据</button>
     </div>
   </div>
   <div class="card">
-    <h3>搜索地点</h3>
-    <div class="input-row">
-      <textarea id="searchInput" rows="3" placeholder="输入或粘贴地址"></textarea>
-      <button class="btn btn-secondary" style="flex:none;min-width:56px" onclick="searchPlace()">搜索</button>
+    <div class="fav-header">
+      <h3>收藏的位置</h3>
+      <button type="button" class="btn btn-sm btn-secondary" onclick="clearAllFav()" id="clearAllBtn" style="display:none">清空全部</button>
     </div>
-    <div style="font-size:11px;color:var(--gray);margin-top:6px">支持地名、街道、邮政编码和多行地址 · Shift + Enter 换行</div>
+    <div id="favList" class="fav-list"></div>
   </div>
   <div class="status" id="status">选好位置后点击「储存到设备」写入代理工具</div>
 </div>
 <div class="toast" id="toast"></div>
-<div class="modal-overlay" id="favModal">
+<div class="modal-overlay" id="favModal" role="dialog" aria-modal="true" aria-labelledby="favModalTitle">
   <div class="modal">
-    <h3>收藏此位置</h3>
+    <h3 id="favModalTitle">收藏此位置</h3>
     <input id="favNameInput" placeholder="输入备注名称（如: 公司、家）" maxlength="30" />
-    <div style="font-size:12px;color:var(--gray);margin-bottom:12px;text-align:center" id="favModalCoords"></div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;text-align:center" id="favModalCoords"></div>
     <div class="modal-btns">
-      <button class="btn btn-secondary" onclick="closeFavModal()">取消</button>
-      <button class="btn btn-primary" onclick="confirmFav()">保存</button>
+      <button type="button" class="btn btn-secondary" onclick="closeFavModal()">取消</button>
+      <button type="button" class="btn btn-primary" onclick="confirmFav()">保存</button>
     </div>
   </div>
 </div>
