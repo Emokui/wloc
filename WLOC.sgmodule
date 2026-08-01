@@ -8,4 +8,4 @@ Apple WLOC = type=http-response, pattern="^https?:\/\/gs-loc(-cn)?\.apple\.com\/
 WLOC Settings = type=http-request, pattern="^https?:\/\/gs-loc(-cn)?\.apple\.com\/wloc-settings\/save", requires-body=0, max-size=0, timeout=10, script-path=https://raw.githubusercontent.com/Emokui/wloc/main/dist/wloc-settings.js, argument=longitude={{{经度}}}&latitude={{{纬度}}}&accuracy={{{精度}}}
 
 [MITM]
-hostname = %APPEND% gs-loc.apple.com, gs-loc-cn.apple.com
+hostname = %INSERT% gs-loc.apple.com, gs-loc-cn.apple.com
