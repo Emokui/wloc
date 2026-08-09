@@ -280,6 +280,30 @@ button { -webkit-tap-highlight-color:transparent; }
 .input-row textarea:focus { border-color:rgba(37,99,235,.5); background:var(--field-focus); box-shadow:0 0 0 4px rgba(37,99,235,.1); }
 .search-btn { min-width:74px; min-height:48px; color:var(--search-text); background:var(--search-bg); box-shadow:none; }
 .search-btn:active { background:var(--search-active); transform:scale(.98); }
+.radius-control {
+  display:grid;
+  grid-template-columns:auto 104px minmax(0,1fr);
+  align-items:center;
+  gap:10px;
+  margin-top:12px;
+  color:var(--secondary-text);
+  font-size:12px;
+}
+.radius-control label { font-weight:650; white-space:nowrap; }
+.radius-control input {
+  width:104px;
+  min-height:42px;
+  padding:9px 10px;
+  color:var(--ink);
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:var(--soft);
+  outline:none;
+  font-size:14px;
+  text-align:right;
+}
+.radius-control input:focus { border-color:rgba(37,99,235,.5); background:var(--field-focus); box-shadow:0 0 0 4px rgba(37,99,235,.1); }
+.radius-help { color:var(--muted); font-size:11px; line-height:1.4; }
 .helper { margin-top:8px; color:var(--muted); font-size:11px; line-height:1.45; }
 .error-banner {
   display:none;
@@ -442,6 +466,8 @@ button { -webkit-tap-highlight-color:transparent; }
   .input-row { grid-template-columns:1fr; }
   .input-row textarea { min-height:48px; height:48px; }
   .search-btn { width:100%; }
+  .radius-control { grid-template-columns:minmax(0,1fr) 104px; }
+  .radius-help { grid-column:1 / -1; }
   .theme-toggle { right:12px; bottom:calc(12px + env(safe-area-inset-bottom)); }
 }
 </style>
@@ -485,6 +511,11 @@ button { -webkit-tap-highlight-color:transparent; }
       </div>
     </div>
     <div class="coords" id="coords">尚未选择目标位置</div>
+    <div class="radius-control">
+      <label for="radiusInput">随机扰动半径（米）</label>
+      <input id="radiusInput" type="number" min="0" max="5000" step="1" value="30" inputmode="numeric" aria-describedby="radiusHelp" />
+      <span class="radius-help" id="radiusHelp">每次定位在目标点周围随机偏移，0 表示关闭，最大 5000 米。</span>
+    </div>
     <div class="row">
       <button type="button" class="btn btn-primary" id="saveBtn" onclick="save()">储存到设备</button>
       <button type="button" class="btn btn-secondary" onclick="addFav()">收藏位置</button>
@@ -533,6 +564,8 @@ button { -webkit-tap-highlight-color:transparent; }
 const SAVE_API = 'https://gs-loc.apple.com/wloc-settings/save';
 const FAV_KEY = 'wloc_favorites';
 const THEME_KEY = 'wloc_theme';
+const DEFAULT_RANDOM_RADIUS = 30;
+const MAX_RANDOM_RADIUS = 5000;
 let lat = null, lon = null;
 let activeLon = null, activeLat = null;
 
@@ -615,6 +648,12 @@ function isValidPosition(newLat, newLon) {
 function parsePositionNumber(value) {
   if (value === null || typeof value === 'undefined' || String(value).trim() === '') return NaN;
   return Number(value);
+}
+
+function parseRandomRadius(value) {
+  if (value === null || typeof value === 'undefined' || String(value).trim() === '') return NaN;
+  const radius = Number(value);
+  return Number.isFinite(radius) && radius >= 0 && radius <= MAX_RANDOM_RADIUS ? radius : NaN;
 }
 
 function setPos(newLat, newLon) {
@@ -756,20 +795,25 @@ function queryActive() {
     .then(d => {
       const queriedLon = parsePositionNumber(d.longitude);
       const queriedLat = parsePositionNumber(d.latitude);
-      if (d.success && isValidPosition(queriedLat, queriedLon)) {
+      const hasRadius = d.randomRadius !== null && typeof d.randomRadius !== 'undefined' && String(d.randomRadius).trim() !== '';
+      const queriedRadius = hasRadius ? parseRandomRadius(d.randomRadius) : DEFAULT_RANDOM_RADIUS;
+      if (d.success && isValidPosition(queriedLat, queriedLon) && Number.isFinite(queriedRadius)) {
         activeLon = queriedLon;
         activeLat = queriedLat;
-        el.textContent = '经度 ' + activeLon.toFixed(6) + '  纬度 ' + activeLat.toFixed(6) + (d.accuracy ? '  精度 ' + d.accuracy + 'm' : '');
+        document.getElementById('radiusInput').value = queriedRadius;
+        el.textContent = '经度 ' + activeLon.toFixed(6) + '  纬度 ' + activeLat.toFixed(6) + (d.accuracy ? '  精度 ' + d.accuracy + 'm' : '') + (queriedRadius ? '  扰动 ' + queriedRadius + 'm' : '');
         moveTo(activeLat, activeLon, 15);
         renderFavs();
       } else {
         activeLon = null; activeLat = null;
+        document.getElementById('radiusInput').value = DEFAULT_RANDOM_RADIUS;
         el.textContent = d.error || '未设置有效坐标';
         renderFavs();
       }
     })
     .catch(() => {
       activeLon = null; activeLat = null;
+      document.getElementById('radiusInput').value = DEFAULT_RANDOM_RADIUS;
       el.textContent = '查询失败 (需要代理模块支持)';
       renderFavs();
     });
@@ -791,18 +835,24 @@ function clearActive() {
 /* ---- Save to device ---- */
 async function save() {
   if (!isValidPosition(lat, lon)) { toast('请先在地图上选择一个位置'); return; }
+  const radius = parseRandomRadius(document.getElementById('radiusInput').value);
+  if (!Number.isFinite(radius)) {
+    toast('扰动半径必须是 0-5000 米之间的数字', 3000);
+    return;
+  }
   const btn = document.getElementById('saveBtn');
   btn.textContent = '储存中...'; btn.disabled = true;
   showError(false);
   try {
-    const r = await fetch(SAVE_API + '?lon=' + lon + '&lat=' + lat + '&acc=25', {
+    const r = await fetch(SAVE_API + '?lon=' + encodeURIComponent(lon) + '&lat=' + encodeURIComponent(lat) + '&acc=25&randomRadius=' + encodeURIComponent(radius), {
       method: 'GET', mode: 'cors', cache: 'no-store'
     });
     const d = await r.json();
     if (d.success) {
       activeLon = lon; activeLat = lat;
       btn.textContent = '\\u2713 已储存'; btn.className = 'btn btn-primary success';
-      document.getElementById('activeValue').textContent = '经度 ' + lon.toFixed(6) + '  纬度 ' + lat.toFixed(6) + '  精度 25m';
+      document.getElementById('radiusInput').value = radius;
+      document.getElementById('activeValue').textContent = '经度 ' + lon.toFixed(6) + '  纬度 ' + lat.toFixed(6) + '  精度 25m' + (radius ? '  扰动 ' + radius + 'm' : '');
       renderFavs();
       toast('\\u2713 坐标已写入设备，下次定位生效');
       setTimeout(() => { btn.textContent='储存到设备'; btn.className='btn btn-primary'; btn.disabled=false; }, 2500);
