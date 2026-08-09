@@ -1,5 +1,7 @@
-/* wloc-settings.js - Surge only - 2026-07-26 */
+/* wloc-settings.js - Surge only - 2026-08-09 */
 const STORE_KEY="emokui_wloc_settings_v1";
+const DEFAULT_RANDOM_RADIUS=30;
+const MAX_RANDOM_RADIUS=5000;
 
 function decodeQueryPart(value){
   try{return decodeURIComponent(String(value).replace(/\+/g," "))}
@@ -54,6 +56,17 @@ function isValidCoordinate(longitude,latitude){
     latitude>=-90&&latitude<=90;
 }
 
+function parseRandomRadius(value){
+  if(value===null||typeof value==="undefined"||String(value).trim()==="")return NaN;
+  const radius=Number(value);
+  return Number.isFinite(radius)&&radius>=0&&radius<=MAX_RANDOM_RADIUS?radius:NaN;
+}
+
+function getModuleRandomRadius(){
+  const radius=parseRandomRadius(moduleArgs.randomRadius);
+  return Number.isFinite(radius)?radius:DEFAULT_RANDOM_RADIUS;
+}
+
 const params=parseQuery($request.url);
 const moduleArgs=parseArguments(globalThis.$argument);
 const action=params.get("action")||"save";
@@ -68,6 +81,8 @@ try{
     const moduleLatitude=parseCoordinate(moduleArgs.latitude);
     const hasSaved=isValidCoordinate(savedLongitude,savedLatitude);
     const hasModuleDefault=isValidCoordinate(moduleLongitude,moduleLatitude);
+    const savedRadius=parseRandomRadius(saved?.randomRadius);
+    const moduleRadius=getModuleRandomRadius();
 
     if(hasSaved||hasModuleDefault){
       const longitude=hasSaved?savedLongitude:moduleLongitude;
@@ -80,7 +95,8 @@ try{
         success:true,
         longitude,
         latitude,
-        accuracy:Number.isFinite(requestedAccuracy)&&requestedAccuracy>0?requestedAccuracy:25
+        accuracy:Number.isFinite(requestedAccuracy)&&requestedAccuracy>0?requestedAccuracy:25,
+        randomRadius:hasSaved&&Number.isFinite(savedRadius)?savedRadius:moduleRadius
       };
     }else{
       result={success:false,error:"模块未设置有效坐标"};
@@ -94,17 +110,27 @@ try{
     const latitude=parseCoordinate(params.get("lat")??params.get("latitude"));
     const requestedAccuracy=Number.parseInt(params.get("acc")??params.get("accuracy")??"25",10);
     const accuracy=Number.isFinite(requestedAccuracy)&&requestedAccuracy>0?requestedAccuracy:25;
+    const existing=readSettings();
+    const savedRadius=parseRandomRadius(existing?.randomRadius);
+    const fallbackRadius=Number.isFinite(savedRadius)
+      ?savedRadius
+      :getModuleRandomRadius();
+    const rawRadius=params.get("randomRadius");
+    const randomRadius=rawRadius===null?fallbackRadius:parseRandomRadius(rawRadius);
 
     if(!isValidCoordinate(longitude,latitude)){
       result={success:false,error:"缺少或无效的 lon/lat 参数"};
+    }else if(!Number.isFinite(randomRadius)){
+      result={success:false,error:`randomRadius 必须是 0-${MAX_RANDOM_RADIUS} 米之间的数字`};
     }else{
       const saved={
         longitude,
         latitude,
-        accuracy
+        accuracy,
+        randomRadius
       };
       result=writeSettings(saved)
-        ?{success:true,longitude,latitude,accuracy}
+        ?{success:true,longitude,latitude,accuracy,randomRadius}
         :{success:false,error:"写入失败"};
     }
   }else{
